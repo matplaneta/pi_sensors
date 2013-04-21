@@ -1,0 +1,53 @@
+#!/bin/sh
+#
+# Trivial script to load/save current contents of the kernel clock
+# from an i2c RTC.
+#
+# This Version is made for Raspberry PI fake-hwclock replacement
+#
+# Tested on: Debian Wheezy with kernel 3.2.21-rp1+_5_armel.deb (2012-06-23)
+# This kernel includes support for i2c and spi!
+# --> http://www.bootc.net
+#
+# Using NTP is still recommended on these machines to get to real time sync
+# once more of the system is up and running.
+#
+# Copyright 2012 Reiner Geiger
+#
+# License: GPLv2, see COPYING
+
+set -e
+
+FILE=/dev/rtc0
+COMMAND=$1
+case $COMMAND in
+save)
+if [ -e $FILE ] ; then
+hwclock -w
+echo "Current system time: $(date -u '+%Y-%m-%d %H:%M') written to RTC"
+else
+echo "No RTC device $FILE found"
+fi
+;;
+load)
+if [ -e $FILE ] ; then
+hwclock -s
+echo "Current system time: $(date -u '+%Y-%m-%d %H:%M') written to RTC"
+else
+modprobe i2c-dev
+modprobe rtc_pcf8563
+command -- echo pcf8563 0x51 > /sys/class/i2c-adapter/i2c-1/new_device
+if [ -e $FILE ] ; then
+hwclock -s
+echo "Current system time: $(date -u '+%Y-%m-%d %H:%M') written to RTC"
+else
+echo "No RTC device $FILE found"
+fi
+fi
+;;
+*)
+echo $0: Unknown command $COMMAND
+exit 1
+;;
+esac
+
